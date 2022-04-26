@@ -19,7 +19,7 @@ resource "aws_default_security_group" "default" {
 
   tags = {
     Name     = "Default"
-    Episodio = "Informe Nube"
+    Episodio = "Ages"
   }
 
   depends_on = [aws_vpc.informe_nube]
@@ -33,7 +33,7 @@ resource "aws_security_group" "servidor_web" {
 
   tags = {
     Name     = "Servidor Web"
-    Episodio = "Informe Nube"
+    Episodio = "Ages"
   }
 }
 
@@ -84,7 +84,7 @@ resource "aws_security_group" "efs" {
 
   tags = {
     Name     = "EFS"
-    Episodio = "Informe Nube"
+    Episodio = "Ages"
   }
 }
 

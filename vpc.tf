@@ -5,8 +5,8 @@ resource "aws_vpc" "informe_nube" {
   enable_dns_hostnames             = true
 
   tags = {
-    Name     = "VPC Tests"
-    Episodio = "Informe Nube"
+    Name     = "Ages"
+    Episodio = "Ages"
   }
 
   lifecycle {
@@ -24,7 +24,7 @@ resource "aws_subnet" "public" {
 
   tags = {
     Name     = "Red publica-${count.index}"
-    Episodio = "Informe Nube"
+    Episodio = "Ages"
   }
 
   depends_on = [aws_vpc.informe_nube]
@@ -38,8 +38,8 @@ resource "aws_subnet" "privada" {
   availability_zone       = element(data.aws_availability_zones.available.names, count.index)
 
   tags = {
-    Name     = "Red privada-${count.index}"
-    Episodio = "Informe Nube"
+    Name     = "ages privada-${count.index}"
+    Episodio = "Ages"
   }
 
   depends_on = [aws_vpc.informe_nube]
@@ -50,8 +50,8 @@ resource "aws_internet_gateway" "informe_nubec" {
   vpc_id = aws_vpc.informe_nube.id
 
   tags = {
-    Name = "Internet Gateway"
-    Episodio = "Informe Nube"
+    Name     = "Internet Gateway"
+    Episodio = "Ages"
   }
 
   lifecycle {
@@ -63,11 +63,11 @@ resource "aws_internet_gateway" "informe_nubec" {
 
 # Routes
 resource "aws_route_table" "public" {
-  vpc_id           = aws_vpc.informe_nube.id
+  vpc_id = aws_vpc.informe_nube.id
   # Internet
   route {
     ipv6_cidr_block = "::/0"
-    gateway_id = aws_internet_gateway.informe_nubec.id
+    gateway_id      = aws_internet_gateway.informe_nubec.id
   }
   route {
     cidr_block = "0.0.0.0/0"
@@ -75,8 +75,8 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "Tabla de Route para las redes public"
-    Episodio = "Informe Nube"
+    Name     = "Tabla de Route para las redes public"
+    Episodio = "Ages"
   }
 
 }
@@ -85,7 +85,7 @@ resource "aws_route_table" "public" {
 resource "aws_route_table_association" "public" {
   count          = length(data.aws_availability_zones.available.zone_ids)
   route_table_id = aws_route_table.public.id
-  subnet_id      = element(aws_subnet.public[*].id,count.index)
+  subnet_id      = element(aws_subnet.public[*].id, count.index)
 
   depends_on = [aws_route_table.public]
 }

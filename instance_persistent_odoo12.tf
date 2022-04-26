@@ -1,10 +1,10 @@
 # Elastic IPS
-resource "aws_eip" "persistent" {
+resource "aws_eip" "odoo12" {
   vpc = true
 
   tags = {
-    Name     = "IP elastica"
-    Episodio = "Informe Nube"
+    Name     = "Odoo12"
+    Episodio = "Ages"
   }
 
   lifecycle {
@@ -12,26 +12,26 @@ resource "aws_eip" "persistent" {
   }
 }
 
-resource "aws_efs_file_system" "persistent" {
-  creation_token   = "InformeNube4"
+resource "aws_efs_file_system" "odoo12" {
+  creation_token   = "odoo12"
   encrypted        = true
   performance_mode = "generalPurpose"
 
   tags = {
     Name     = "EFS"
-    Episodio = "Informe Nube"
+    Episodio = "Ages"
   }
 }
 
-resource "aws_efs_mount_target" "persistent" {
+resource "aws_efs_mount_target" "odoo12" {
   count           = length(data.aws_availability_zones.available.zone_ids)
-  file_system_id  = aws_efs_file_system.persistent.id
+  file_system_id  = aws_efs_file_system.odoo12.id
   subnet_id       = element(aws_subnet.privada.*.id, count.index)
   security_groups = [aws_security_group.efs.id]
 }
 
 
-resource "aws_instance" "persistent" {
+resource "aws_instance" "odoo12" {
   count = 1
   #availability_zone      = "eu-west-1b"
   ami                    = "ami-0d527b8c289b4af7f" // AMI son regionales (distintas IDS por region) instancia de ubuntu en la region de irlandia
@@ -50,36 +50,51 @@ resource "aws_instance" "persistent" {
     delete_on_termination = true
   }
 
+
   user_data = <<-EOF
                 #!/bin/bash
                 # ---> Updating, upgrating and installing the base
                 apt update
-                apt install python3-pip apt-transport-https ca-certificates curl software-properties-common nfs-common -y
+                apt install git python3-pip apt-transport-https ca-certificates curl software-properties-common nfs-common -y
                 mkdir /var/lib/docker
-                echo "${aws_efs_file_system.persistent.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
+                echo "${aws_efs_file_system.odoo12.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
                 mount -a
-                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-                add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
-                apt update && apt upgrade -y
-                apt install docker-ce -y
-                systemctl status docker
-                usermod -aG docker ubuntu
-                docker run -p 80:80 -d nginxdemos/hello
+                                   
                 EOF
 
   tags = {
     Name     = "EC2 con persistencia en ${aws_subnet.public[count.index].availability_zone}"
-    Episodio = "Informe Nube"
+    Episodio = "Ages"
   }
 
-  depends_on = [aws_efs_file_system.persistent, aws_efs_mount_target.persistent]
+  depends_on = [aws_efs_file_system.odoo12, aws_efs_mount_target.odoo12]
 }
 
-resource "aws_eip_association" "persistent" {
-  instance_id   = aws_instance.persistent[0].id
-  allocation_id = aws_eip.persistent.id
+resource "aws_eip_association" "odoo12" {
+  instance_id   = aws_instance.odoo12[0].id
+  allocation_id = aws_eip.odoo12.id
 }
 
-output "persistent_dns" {
-  value = aws_eip.persistent.public_dns
+resource "null_resource" "script_odoo12" {
+  provisioner "file" {
+    source      = "script/odoo12.sh"
+    destination = "/tmp/odoo12.sh"
+  }
+  connection {
+    type        = "ssh"
+    host        = aws_eip.odoo12.public_dns
+    user        = "ubuntu"
+    private_key = file(var.ssh_priv_path)
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo chmod +x /tmp/odoo12.sh",
+      "sudo sh /tmp/odoo12.sh  ~/odoo12",
+    ]
+  }
+
+  depends_on = [aws_eip_association.odoo12]
 }
+
+
