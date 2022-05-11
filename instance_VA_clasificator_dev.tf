@@ -65,7 +65,7 @@ resource "aws_instance" "VA_clasificator_dev" {
                 systemctl status docker
                 usermod -aG docker ubuntu
                 #--docker run -p 80:80 -d nginxdemos/hello
-                pip install -r requirements.txt
+                pip install -r /tmp/requirements.txt
                 EOF
 
   tags = {

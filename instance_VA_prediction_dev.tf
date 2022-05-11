@@ -1,5 +1,5 @@
 # Elastic IPS
-resource "aws_eip" "va" {
+resource "aws_eip" "VA_prediction_dev" {
   vpc = true
 
   tags = {
@@ -12,8 +12,8 @@ resource "aws_eip" "va" {
   }
 }
 
-resource "aws_efs_file_system" "va" {
-  creation_token   = "VisionArtificial"
+resource "aws_efs_file_system" "VA_prediction_dev" {
+  creation_token   = "VA_prediction_dev"
   encrypted        = true
   performance_mode = "generalPurpose"
 
@@ -23,15 +23,15 @@ resource "aws_efs_file_system" "va" {
   }
 }
 
-resource "aws_efs_mount_target" "va" {
+resource "aws_efs_mount_target" "VA_prediction_dev" {
   count           = length(data.aws_availability_zones.available.zone_ids)
-  file_system_id  = aws_efs_file_system.va.id
+  file_system_id  = aws_efs_file_system.VA_prediction_dev.id
   subnet_id       = element(aws_subnet.privada.*.id, count.index)
   security_groups = [aws_security_group.efs.id]
 }
 
 
-resource "aws_instance" "va" {
+resource "aws_instance" "VA_prediction_dev" {
   count = 1
   #availability_zone      = "eu-west-1b"
   ami                    = "ami-0d527b8c289b4af7f" // AMI son regionales (distintas IDS por region) instancia de ubuntu en la region de irlandia
@@ -56,7 +56,7 @@ resource "aws_instance" "va" {
                 apt update
                 apt install python3-pip apt-transport-https ca-certificates curl software-properties-common nfs-common -y
                 mkdir /var/lib/docker
-                echo "${aws_efs_file_system.va.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
+                echo "${aws_efs_file_system.VA_prediction_dev.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
                 mount -a
                 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
                 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
@@ -64,7 +64,9 @@ resource "aws_instance" "va" {
                 apt install docker-ce -y
                 systemctl status docker
                 usermod -aG docker ubuntu
-                docker run -p 80:80 -d nginxdemos/hello
+                #---docker run -p 80:80 -d nginxdemos/hello
+                pip install -r /tmp/requirements.txt
+
                 EOF
 
   tags = {
@@ -72,14 +74,29 @@ resource "aws_instance" "va" {
     Episodio = "Vision Artificial"
   }
 
-  depends_on = [aws_efs_file_system.va, aws_efs_mount_target.va]
+  depends_on = [aws_efs_file_system.VA_prediction_dev, aws_efs_mount_target.VA_prediction_dev]
 }
 
-resource "aws_eip_association" "va" {
-  instance_id   = aws_instance.va[0].id
-  allocation_id = aws_eip.va.id
+resource "aws_eip_association" "VA_prediction_dev" {
+  instance_id   = aws_instance.VA_prediction_dev[0].id
+  allocation_id = aws_eip.VA_prediction_dev.id
 }
 
-output "va_dns" {
-  value = aws_eip.va.public_dns
+output "VA_prediction_dev" {
+  value = aws_eip.VA_prediction_dev.public_dns
+}
+
+resource "null_resource" "VA_prediction_dev" {
+  provisioner "file" {
+    source      = "script/requirements.txt"
+    destination = "/tmp/requirements.txt"
+  }
+  connection {
+    type        = "ssh"
+    host        = aws_eip.VA_prediction_dev.public_dns
+    user        = "ubuntu"
+    private_key = file(var.ssh_priv_path)
+  }
+
+  depends_on = [aws_eip_association.VA_prediction_dev]
 }
