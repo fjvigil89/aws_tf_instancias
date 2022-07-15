@@ -55,7 +55,7 @@ resource "aws_instance" "odoo12" {
                 #!/bin/bash
                 # ---> Updating, upgrating and installing the base
                 apt update
-                apt install git python3-pip apt-transport-https ca-certificates curl software-properties-common nfs-common -y
+                apt install git python3-pip  python3-opencv apt-transport-https ca-certificates curl software-properties-common nfs-common -y
                 mkdir /var/lib/docker
                 echo "${aws_efs_file_system.odoo12.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
                 mount -a

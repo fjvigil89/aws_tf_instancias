@@ -46,7 +46,7 @@ resource "aws_instance" "VA_prediction_dev" {
 
   root_block_device {
     volume_type           = "gp2"
-    volume_size           = "10"
+    volume_size           = "25"
     delete_on_termination = true
   }
 
@@ -54,7 +54,7 @@ resource "aws_instance" "VA_prediction_dev" {
                 #!/bin/bash
                 # ---> Updating, upgrating and installing the base
                 apt update
-                apt install python3-pip apt-transport-https ca-certificates curl software-properties-common nfs-common -y
+                apt install python3-pip python3-opencv apt-transport-https ca-certificates curl software-properties-common nfs-common -y
                 mkdir /var/lib/docker
                 echo "${aws_efs_file_system.VA_prediction_dev.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
                 mount -a
@@ -65,7 +65,7 @@ resource "aws_instance" "VA_prediction_dev" {
                 systemctl status docker
                 usermod -aG docker ubuntu
                 #---docker run -p 80:80 -d nginxdemos/hello
-                pip install -r /tmp/requirements.txt
+                
 
                 EOF
 
@@ -82,21 +82,5 @@ resource "aws_eip_association" "VA_prediction_dev" {
   allocation_id = aws_eip.VA_prediction_dev.id
 }
 
-output "VA_prediction_dev" {
-  value = aws_eip.VA_prediction_dev.public_dns
-}
 
-resource "null_resource" "VA_prediction_dev" {
-  provisioner "file" {
-    source      = "script/requirements.txt"
-    destination = "/tmp/requirements.txt"
-  }
-  connection {
-    type        = "ssh"
-    host        = aws_eip.VA_prediction_dev.public_dns
-    user        = "ubuntu"
-    private_key = file(var.ssh_priv_path)
-  }
 
-  depends_on = [aws_eip_association.VA_prediction_dev]
-}

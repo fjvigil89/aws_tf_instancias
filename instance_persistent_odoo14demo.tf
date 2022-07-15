@@ -1,9 +1,9 @@
 # Elastic IPS
-resource "aws_eip" "odoo14" {
+resource "aws_eip" "odoo14demo" {
   vpc = true
 
   tags = {
-    Name     = "Odoo14"
+    Name     = "Odoo14demo"
     Episodio = "Ages"
   }
 
@@ -12,8 +12,8 @@ resource "aws_eip" "odoo14" {
   }
 }
 
-resource "aws_efs_file_system" "odoo14" {
-  creation_token   = "odoo14"
+resource "aws_efs_file_system" "odoo14demo" {
+  creation_token   = "odoo14demo"
   encrypted        = true
   performance_mode = "generalPurpose"
 
@@ -23,15 +23,15 @@ resource "aws_efs_file_system" "odoo14" {
   }
 }
 
-resource "aws_efs_mount_target" "odoo14" {
+resource "aws_efs_mount_target" "odoo14demo" {
   count           = length(data.aws_availability_zones.available.zone_ids)
-  file_system_id  = aws_efs_file_system.odoo14.id
+  file_system_id  = aws_efs_file_system.odoo14demo.id
   subnet_id       = element(aws_subnet.privada.*.id, count.index)
   security_groups = [aws_security_group.efs.id]
 }
 
 
-resource "aws_instance" "odoo14" {
+resource "aws_instance" "odoo14demo" {
   count = 1
   #availability_zone      = "eu-west-1b"
   ami                    = "ami-0d527b8c289b4af7f" // AMI son regionales (distintas IDS por region) instancia de ubuntu en la region de irlandia
@@ -46,7 +46,7 @@ resource "aws_instance" "odoo14" {
 
   root_block_device {
     volume_type           = "gp2"
-    volume_size           = "10"
+    volume_size           = "15"
     delete_on_termination = true
   }
 
@@ -57,7 +57,7 @@ resource "aws_instance" "odoo14" {
                 apt updateapt update
                 apt install git python3-pip python3-opencv apt-transport-https ca-certificates curl software-properties-common nfs-common -y
                 mkdir /var/lib/docker
-                echo "${aws_efs_file_system.odoo14.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
+                echo "${aws_efs_file_system.odoo14demo.dns_name}:/  /var/lib/docker    nfs4   nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 0 2" >> /etc/fstab
                 mount -a
                 
                 EOF
@@ -67,22 +67,22 @@ resource "aws_instance" "odoo14" {
     Episodio = "Ages"
   }
 
-  depends_on = [aws_efs_file_system.odoo14, aws_efs_mount_target.odoo14]
+  depends_on = [aws_efs_file_system.odoo14demo, aws_efs_mount_target.odoo14demo]
 }
 
-resource "aws_eip_association" "odoo14" {
-  instance_id   = aws_instance.odoo14[0].id
-  allocation_id = aws_eip.odoo14.id
+resource "aws_eip_association" "odoo14demo" {
+  instance_id   = aws_instance.odoo14demo[0].id
+  allocation_id = aws_eip.odoo14demo.id
 }
 
-resource "null_resource" "script_odoo14" {
+resource "null_resource" "script_odoo14demo" {
   provisioner "file" {
     source      = "script/odoo14.sh"
     destination = "/tmp/odoo14.sh"
   }
   connection {
     type        = "ssh"
-    host        = aws_eip.odoo14.public_dns
+    host        = aws_eip.odoo14demo.public_dns
     user        = "ubuntu"
     private_key = file(var.ssh_priv_path)
   }
@@ -94,7 +94,7 @@ resource "null_resource" "script_odoo14" {
     ]
   }
 
-  depends_on = [aws_eip_association.odoo14]
+  depends_on = [aws_eip_association.odoo14demo]
 }
 
 
