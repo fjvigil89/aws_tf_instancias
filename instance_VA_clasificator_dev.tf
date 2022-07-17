@@ -1,4 +1,4 @@
-# Elastic IPS
+/* # Elastic IPS
 resource "aws_eip" "VA_clasificator_dev" {
   vpc = true
 
@@ -84,3 +84,4 @@ resource "aws_eip_association" "VA_clasificator_dev" {
 
 
 
+ */
